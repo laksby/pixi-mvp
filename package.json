@@ -2,7 +2,7 @@
   "name": "@laksby/pixi-mvp",
   "version": "1.0.4",
   "description": "PixiJS project architecture based on MVP pattern",
-  "main": "./dist/index.min.js",
+  "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
     "/dist"
