@@ -30,7 +30,7 @@ export abstract class BaseGame<M> {
     await Promise.all(fonts.map(fontName => new FontFaceObserver(fontName).load()));
 
     const model = this.createModel();
-    const rootView = this.createRootView();
+    const rootView = this.createRootView(model);
 
     await rootView.initializeView(this.app, this.app.stage, model);
 
@@ -62,5 +62,5 @@ export abstract class BaseGame<M> {
   }
 
   protected abstract createModel(): M;
-  protected abstract createRootView(): IView;
+  protected abstract createRootView(model: M): IView;
 }
