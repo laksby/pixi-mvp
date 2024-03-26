@@ -1,4 +1,9 @@
 # PixiJS MVP
+
+![status](https://github.com/laksby/pixi-mvp/actions/workflows/test.yml/badge.svg?branch=master)
+
+This repository contains source code for library implementing components necessary for building PixiJS project using architecture based on MVP pattern.
+
 ## Setup
 
 Clone repository
