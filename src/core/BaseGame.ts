@@ -4,6 +4,8 @@ import { Application, ApplicationOptions, Assets, UnresolvedAsset } from 'pixi.j
 import { FunctionUtils } from '../utils';
 import { IView } from './IView';
 
+export type GameApplicationOptions = Omit<Partial<ApplicationOptions>, 'canvas' | 'resizeTo'>;
+
 export abstract class BaseGame<M> {
   private readonly _canvas: HTMLCanvasElement;
   private readonly _app: Application;
@@ -13,7 +15,9 @@ export abstract class BaseGame<M> {
     this._app = new Application();
   }
 
-  public async initializeGame(options: Omit<Partial<ApplicationOptions>, 'canvas' | 'resizeTo'>): Promise<void> {
+  public async initializeGame(): Promise<void> {
+    const options = this.createOptions();
+
     await this.app.init({
       canvas: this.canvas,
       resizeTo: window,
@@ -46,6 +50,10 @@ export abstract class BaseGame<M> {
     return this._app;
   }
 
+  protected abstract createOptions(): GameApplicationOptions;
+  protected abstract createModel(): M;
+  protected abstract createRootView(model: M): IView;
+
   protected getAssets(): UnresolvedAsset[] {
     // Virtual
     return [];
@@ -60,7 +68,4 @@ export abstract class BaseGame<M> {
     // Virtual
     return [];
   }
-
-  protected abstract createModel(): M;
-  protected abstract createRootView(model: M): IView;
 }
