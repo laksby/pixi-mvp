@@ -5,7 +5,7 @@
     "declaration": true,
     "isolatedModules": false,
     "lib": ["esnext", "dom"],
-    "module": "AMD",
+    "module": "CommonJS",
     "noEmit": false,
     "removeComments": true,
     "sourceMap": true,
@@ -27,7 +27,7 @@
     "preserveConstEnums": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "outFile": "./dist/index.js"
+    "outDir": "./dist"
   },
   "include": ["./src/**/*"]
 }
