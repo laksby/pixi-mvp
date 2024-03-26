@@ -34,5 +34,3 @@ Format code
 ```bash
 npm run format
 ```
-
-**IMPORTANT!** Project uses [Husky](https://github.com/typicode/husky) for automated code formatting on commit.

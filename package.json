@@ -27,14 +27,12 @@
     "build": "tsc && esbuild dist/index.js --minify --sourcemap --outfile=dist/index.min.js",
     "test": "npm run typecheck",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write .",
-    "prepare": "husky"
+    "format": "prettier --write ."
   },
   "dependencies": {},
   "devDependencies": {
     "@types/node": "^20.11.17",
     "esbuild": "^0.20.2",
-    "husky": "^9.0.10",
     "prettier": "^3.2.5",
     "typescript": "^5.3.3"
   }
