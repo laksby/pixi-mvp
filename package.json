@@ -1,0 +1,19 @@
+{
+  "name": "pixi-mvp",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "test": "npm run typecheck",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "prepare": "husky"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.11.17",
+    "husky": "^9.0.10",
+    "prettier": "^3.2.5",
+    "typescript": "^5.3.3"
+  }
+}
