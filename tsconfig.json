@@ -5,7 +5,7 @@
     "declaration": true,
     "isolatedModules": false,
     "lib": ["esnext", "dom"],
-    "module": "CommonJS",
+    "module": "esnext",
     "noEmit": false,
     "removeComments": true,
     "sourceMap": true,
