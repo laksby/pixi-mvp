@@ -3,6 +3,22 @@
   "version": "1.0.0",
   "description": "PixiJS project architecture based on MVP pattern",
   "private": true,
+  "main": "./dist/index.js",
+  "keywords": [
+    "pixi",
+    "lib",
+    "mvp"
+  ],
+  "homepage": "https://github.com/laksby/pixi-mvp",
+  "license": "MIT",
+  "author": {
+    "name": "@laksby",
+    "email": "laksby@icloud.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/laksby/pixi-mvp"
+  },
   "scripts": {
     "test": "npm run typecheck",
     "typecheck": "tsc --noEmit",
