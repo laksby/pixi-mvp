@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "description": "PixiJS project architecture based on MVP pattern",
   "private": true,
-  "main": "./dist/index.js",
+  "main": "./dist/index.min.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "/dist"
+  ],
   "keywords": [
     "pixi",
     "lib",
@@ -20,6 +24,7 @@
     "url": "https://github.com/laksby/pixi-mvp"
   },
   "scripts": {
+    "build": "tsc && esbuild dist/index.js --minify --sourcemap --outfile=dist/index.min.js",
     "test": "npm run typecheck",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
@@ -28,6 +33,7 @@
   "dependencies": {},
   "devDependencies": {
     "@types/node": "^20.11.17",
+    "esbuild": "^0.20.2",
     "husky": "^9.0.10",
     "prettier": "^3.2.5",
     "typescript": "^5.3.3"

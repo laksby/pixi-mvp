@@ -2,11 +2,11 @@
   "compilerOptions": {
     "allowJs": true,
     "checkJs": true,
-    "declaration": false,
-    "isolatedModules": true,
+    "declaration": true,
+    "isolatedModules": false,
     "lib": ["esnext", "dom"],
-    "module": "esnext",
-    "noEmit": true,
+    "module": "AMD",
+    "noEmit": false,
     "removeComments": true,
     "sourceMap": true,
     "target": "esnext",
@@ -26,7 +26,8 @@
     "forceConsistentCasingInFileNames": true,
     "preserveConstEnums": true,
     "resolveJsonModule": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "outFile": "./dist/index.js"
   },
   "include": ["./src/**/*"]
 }
