@@ -1,6 +1,6 @@
 {
   "name": "pixi-mvp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "PixiJS project architecture based on MVP pattern",
   "private": true,
   "main": "./dist/index.min.js",
