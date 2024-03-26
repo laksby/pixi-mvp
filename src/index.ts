@@ -1,5 +1,4 @@
-import { helloWorld } from './other';
-
-export function pixiMvp(): void {
-  helloWorld();
-}
+export * from './animation';
+export * from './core';
+export * from './types';
+export * from './utils';
