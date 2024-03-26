@@ -1,5 +1,5 @@
 {
-  "name": "pixi-mvp",
+  "name": "@laksby/pixi-mvp",
   "version": "1.0.1",
   "description": "PixiJS project architecture based on MVP pattern",
   "private": true,
