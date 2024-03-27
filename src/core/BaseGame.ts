@@ -1,8 +1,9 @@
 import { SoundSourceMap, sound } from '@pixi/sound';
 import FontFaceObserver from 'fontfaceobserver';
-import { Application, ApplicationOptions, Assets, UnresolvedAsset } from 'pixi.js';
+import { Application, ApplicationOptions, Assets, TextStyleOptions, UnresolvedAsset } from 'pixi.js';
 import { FunctionUtils } from '../utils';
 import { IView } from './IView';
+import { ViewContext } from './types/ViewContext';
 
 export type GameApplicationOptions = Omit<Partial<ApplicationOptions>, 'canvas' | 'resizeTo'>;
 
@@ -27,6 +28,7 @@ export abstract class BaseGame<M> {
     const assets = this.getAssets();
     const sounds = this.getSounds();
     const fonts = this.getFonts();
+    const textStyles = this.getTextStyles();
 
     assets.forEach(asset => Assets.add(asset));
     sound.add(sounds);
@@ -36,7 +38,12 @@ export abstract class BaseGame<M> {
     const model = this.createModel();
     const rootView = this.createRootView(model);
 
-    await rootView.initializeView(this.app, this.app.stage, model);
+    const viewContext: ViewContext = {
+      model,
+      textStyles: new Map(Object.entries(textStyles)),
+    };
+
+    await rootView.initializeView(this.app, this.app.stage, viewContext);
 
     const resize = FunctionUtils.debounce(() => rootView.refreshView(this.app.stage), 300);
     window.addEventListener('resize', resize);
@@ -67,5 +74,10 @@ export abstract class BaseGame<M> {
   protected getFonts(): string[] {
     // Virtual
     return [];
+  }
+
+  protected getTextStyles(): Record<string, TextStyleOptions> {
+    // Virtual
+    return {};
   }
 }
