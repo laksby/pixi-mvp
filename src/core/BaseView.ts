@@ -4,12 +4,14 @@ import {
   Component,
   ComponentInitializer,
   ComponentLayoutManager,
+  ComponentPool,
   ContainerConstructor,
   IComponent,
 } from '../component';
-import { ErrorUtils } from '../utils';
+import { ContainerUtils, ErrorUtils } from '../utils';
 import { IPresenter } from './IPresenter';
 import { IView } from './IView';
+import { ViewInitializer } from './ViewBuilder';
 import { ViewComponent } from './ViewComponent';
 import { ViewContext } from './types/ViewContext';
 
@@ -44,7 +46,10 @@ export abstract class BaseView<P extends IPresenter> implements IView {
 
     parent.addChild(this.container);
 
-    this._presenter = Reflect.construct(this._presenterType, [this, this.context.model]) as P;
+    if (!this._presenter) {
+      this._presenter = Reflect.construct(this._presenterType, [this, this.context.model]) as P;
+    }
+
     await Promise.all(Array.from(this._components).map(component => component.initializeComponent(this.container)));
 
     await this.onLoad();
@@ -53,6 +58,10 @@ export abstract class BaseView<P extends IPresenter> implements IView {
 
   public async refreshView(parent: Container): Promise<void> {
     await this.initializeView(this.app, parent, this.context);
+  }
+
+  public destroyView(): void {
+    this.container.destroy();
   }
 
   public get app(): Application {
@@ -93,8 +102,14 @@ export abstract class BaseView<P extends IPresenter> implements IView {
     return component;
   }
 
-  protected view(view: IView): ViewComponent {
-    const component = new ViewComponent(this, view);
+  protected view<V extends IView>(view: V, initializer: ViewInitializer): ViewComponent<V> {
+    const component = new ViewComponent(this, view, initializer);
+    this._components.add(component);
+    return component;
+  }
+
+  protected pool<C extends Container>(ctor: ContainerConstructor<C>): ComponentPool<C> {
+    const component = new ComponentPool(this._layoutManager, ctor);
     this._components.add(component);
     return component;
   }
@@ -104,29 +119,14 @@ export abstract class BaseView<P extends IPresenter> implements IView {
       return this._searchCache.get(label) as T;
     }
 
-    const child = this.searchRecursive(label, this.container.children);
+    const child = ContainerUtils.byLabel(label, this.container);
     this._searchCache.set(label, child);
 
     return child as T;
   }
 
-  protected textStyle(key: string): TextStyleOptions {
-    return this.context.textStyles.get(key) ?? {};
-  }
-
-  private searchRecursive(label: string, children: Container[]): Container | undefined {
-    for (const component of children) {
-      if (component.label === label) {
-        return component;
-      }
-
-      const child = this.searchRecursive(label, component.children);
-
-      if (child) {
-        return child;
-      }
-    }
-
-    return undefined;
+  protected textStyle(key: string, override: TextStyleOptions = {}): TextStyleOptions {
+    const textStyle = this.context.textStyles.get(key) ?? {};
+    return Object.assign(textStyle, override);
   }
 }

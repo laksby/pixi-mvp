@@ -1,5 +1,24 @@
-import { Container, ContainerOptions, EventEmitter, FederatedOptions, Graphics, PointData, TextOptions } from 'pixi.js';
-import { ComponentLayoutManager, LayoutDirection, LayoutPreset } from './ComponentLayoutManager';
+import {
+  Container,
+  ContainerOptions,
+  EventEmitter,
+  FederatedOptions,
+  Filter,
+  Graphics,
+  PointData,
+  Size,
+  SpriteOptions,
+  TextOptions,
+} from 'pixi.js';
+import { Action1 } from '../types';
+import { FilterUtils } from '../utils';
+import {
+  ComponentLayoutManager,
+  LayoutAmount,
+  LayoutDirection,
+  LayoutPositionChange,
+  LayoutPreset,
+} from './ComponentLayoutManager';
 
 export type ComponentInitializer = (builder: ComponentBuilder) => void;
 export type ContainerConstructor<C extends Container> = new () => C;
@@ -18,22 +37,29 @@ export interface ChildBuilder<T extends Container> {
 
 export class ComponentBuilder {
   private _layoutManager: ComponentLayoutManager;
-  private _position: PointData = { x: 0, y: 0 };
+  private _positionFlow: LayoutPositionChange[] = [];
   private _options = new Map<string, unknown>();
+  private _assets = new Map<string, string>();
   private _events: ComponentBuilderEvent<string>[] = [];
   private _draws: DrawInitializer[] = [];
+  private _customActions: Action1<Container>[] = [];
+  private _filters: Filter[] = [];
   private _children: ChildBuilder<Container>[] = [];
 
   constructor(layoutManager: ComponentLayoutManager) {
     this._layoutManager = layoutManager;
   }
 
-  public get position(): PointData {
-    return this._position;
+  public get positionFlow(): LayoutPositionChange[] {
+    return this._positionFlow;
   }
 
-  public get options(): unknown {
+  public get options(): object {
     return Object.fromEntries(this._options.entries());
+  }
+
+  public get assets(): [string, string][] {
+    return Array.from(this._assets.entries());
   }
 
   public get events(): ComponentBuilderEvent<string>[] {
@@ -44,8 +70,25 @@ export class ComponentBuilder {
     return this._draws;
   }
 
+  public get customActions(): Action1<Container>[] {
+    return this._customActions;
+  }
+
+  public get filters(): Filter[] {
+    return this._filters;
+  }
+
   public get children(): ChildBuilder<Container>[] {
     return this._children;
+  }
+
+  public spriteTexture(texture: string): this {
+    this._assets.set('texture', texture);
+    return this;
+  }
+
+  public spriteAnchor(anchor: SpriteOptions['anchor']): this {
+    return this.setOptions<SpriteOptions>({ anchor });
   }
 
   public text(text: TextOptions['text']): this {
@@ -65,13 +108,25 @@ export class ComponentBuilder {
     return this;
   }
 
+  public scale(scale: ContainerOptions['scale']): this {
+    return this.setOptions<ContainerOptions>({ scale });
+  }
+
+  public size(size: Size): this {
+    return this.setOptions<ContainerOptions>({ width: size.width, height: size.height });
+  }
+
+  public position(position: PointData): this {
+    return this.setOptions<ContainerOptions>({ position });
+  }
+
   public layout(options: LayoutPreset): this {
-    this._position = this._layoutManager.getPositionFromPreset(options);
+    this._positionFlow.push(this._layoutManager.positionPreset(options));
     return this;
   }
 
-  public shift(direction: LayoutDirection, amount: number): this {
-    this._position = this._layoutManager.getShiftedPosition(this._position, direction, amount);
+  public shift(direction: LayoutDirection, amount: LayoutAmount): this {
+    this.positionFlow.push(this._layoutManager.positionShift(direction, amount));
     return this;
   }
 
@@ -87,6 +142,11 @@ export class ComponentBuilder {
     return this.setOptions<ContainerOptions>({ visible: !hidden });
   }
 
+  public filter(filter: Filter): this {
+    this._filters.push(filter);
+    return this;
+  }
+
   public child<T extends Container>(ctor: ContainerConstructor<T>, initializer: ComponentInitializer): this {
     this._children.push({ ctor, initializer });
     return this;
@@ -97,6 +157,11 @@ export class ComponentBuilder {
       eventMode: 'static',
       cursor: 'pointer',
     });
+  }
+
+  public hover(): this {
+    this._customActions.push(container => FilterUtils.hover(container));
+    return this;
   }
 
   public on<E extends EventEmitter.EventNames<string>>(

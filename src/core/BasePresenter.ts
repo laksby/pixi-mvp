@@ -4,6 +4,7 @@ import { IView } from './IView';
 export abstract class BasePresenter<V extends IView, M> implements IPresenter {
   private readonly _view: V;
   private readonly _model: M;
+  private _isInitialized = false;
 
   constructor(view: V, model: M) {
     this._view = view;
@@ -11,7 +12,11 @@ export abstract class BasePresenter<V extends IView, M> implements IPresenter {
   }
 
   public async initializePresenter(): Promise<void> {
-    await this.onPrepare();
+    if (!this._isInitialized) {
+      await this.onPrepare();
+      this._isInitialized = true;
+    }
+
     await this.onRefresh();
   }
 

@@ -2,16 +2,15 @@ import { ColorMatrixFilter, Container, Filter } from 'pixi.js';
 
 export abstract class FilterUtils {
   public static hover(container: Container): void {
-    const hoverFilter = FilterUtils.attach(container, new ColorMatrixFilter());
+    const hoverFilter = new ColorMatrixFilter();
     hoverFilter.brightness(1.2, true);
-    hoverFilter.enabled = false;
 
     container.on('mouseover', () => {
-      hoverFilter.enabled = true;
+      FilterUtils.attach(container, hoverFilter);
     });
 
     container.on('mouseleave', () => {
-      hoverFilter.enabled = false;
+      FilterUtils.remove(container, hoverFilter);
     });
   }
 
