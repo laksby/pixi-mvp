@@ -31,6 +31,11 @@ export class ComponentPool<C extends Container> implements IComponent {
     this.container.destroy();
   }
 
+  public get(key: unknown): Component<C> | undefined {
+    const component = this._children.get(key);
+    return component;
+  }
+
   public async add(key: unknown, initializer: ComponentInitializer): Promise<Component<C>> {
     const component = new Component(this._layoutManager, this._ctor, initializer);
     this._children.set(key, component);

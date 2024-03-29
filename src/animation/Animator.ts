@@ -1,29 +1,41 @@
 import { AdjustmentFilter, ShockwaveFilter, ShockwaveFilterOptions } from 'pixi-filters';
 import { Application, Container, PointData } from 'pixi.js';
-import { FilterUtils, MathUtils } from '../utils';
+import { ErrorUtils, FilterUtils, MathUtils } from '../utils';
 import { AnimationHandle } from './AnimationHandle';
 
-export class Animator {
-  private readonly _app: Application;
+export interface ICanScale {
+  scale: PointData;
+}
 
-  constructor(app: Application) {
+export interface ICanMove {
+  position: PointData;
+}
+
+export class Animator {
+  private _app?: Application;
+
+  public get app(): Application {
+    return this._app || ErrorUtils.notInitialized(this, 'Application');
+  }
+
+  public initializeAnimator(app: Application): void {
     this._app = app;
   }
 
-  public async shockWave(container: Container, duration: number, options?: ShockwaveFilterOptions): Promise<void> {
-    const filter = FilterUtils.attach(container, new ShockwaveFilter(options));
+  public async shockWave(target: Container, duration: number, options?: ShockwaveFilterOptions): Promise<void> {
+    const filter = FilterUtils.attach(target, new ShockwaveFilter(options));
 
     await this.generic(elapsed => {
       filter.time = elapsed / duration;
     }, duration);
 
-    FilterUtils.remove(container, filter);
+    FilterUtils.remove(target, filter);
   }
 
-  public glowStart(container: Container, speed: number, handle?: AnimationHandle): void {
-    const filter = FilterUtils.attach(container, new AdjustmentFilter({ saturation: 0.5 }));
+  public glowStart(target: Container, speed: number, handle?: AnimationHandle): void {
+    const filter = FilterUtils.attach(target, new AdjustmentFilter({ saturation: 0.5 }));
 
-    handle?.connect(() => FilterUtils.remove(container, filter));
+    handle?.connect(() => FilterUtils.remove(target, filter));
 
     this.generic(
       elapsed => {
@@ -35,32 +47,33 @@ export class Animator {
     );
   }
 
-  public async appear(container: Container, duration: number): Promise<void> {
-    const originalX = container.scale.x;
-    const originalY = container.scale.y;
-    container.scale.set(0, 0);
+  public async appear(target: ICanScale, duration: number): Promise<void> {
+    const originalX = target.scale.x;
+    const originalY = target.scale.y;
+    target.scale = { x: 0, y: 0 };
 
     await this.generic(elapsed => {
-      const { x, y } = MathUtils.lerp2D(container.scale, { x: originalX, y: originalY }, elapsed / duration);
-      container.scale.set(x, y);
+      const { x, y } = MathUtils.lerp2D(target.scale, { x: originalX, y: originalY }, elapsed / duration);
+      target.scale = { x, y };
     }, duration);
-    container.scale.set(originalX, originalY);
+
+    target.scale = { x: originalX, y: originalY };
   }
 
-  public async hide(container: Container, duration: number): Promise<void> {
+  public async hide(target: ICanScale, duration: number): Promise<void> {
     await this.generic(elapsed => {
-      const { x, y } = MathUtils.lerp2D(container.scale, { x: 0, y: 0 }, elapsed / duration);
-      container.scale.set(x, y);
+      const { x, y } = MathUtils.lerp2D(target.scale, { x: 0, y: 0 }, elapsed / duration);
+      target.scale = { x, y };
     }, duration);
-    container.scale.set(0, 0);
+    target.scale = { x: 0, y: 0 };
   }
 
-  public async move(container: Container, newPosition: PointData, duration: number): Promise<void> {
+  public async move(target: ICanMove, newPosition: PointData, duration: number): Promise<void> {
     await this.generic(elapsed => {
-      const { x, y } = MathUtils.lerp2D(container.position, newPosition, elapsed / duration);
-      container.position.set(x, y);
+      const { x, y } = MathUtils.lerp2D(target.position, newPosition, elapsed / duration);
+      target.position = { x, y };
     }, duration);
-    container.position.set(newPosition.x, newPosition.y);
+    target.position = { x: newPosition.x, y: newPosition.y };
   }
 
   public async generic(
@@ -72,12 +85,12 @@ export class Animator {
       let elapsed = 0;
 
       const destroy = () => {
-        this._app.ticker.remove(update);
+        this.app.ticker.remove(update);
         resolve();
       };
 
       const update = () => {
-        elapsed += this._app.ticker.deltaMS;
+        elapsed += this.app.ticker.deltaMS;
         action(elapsed);
 
         if (duration !== undefined && elapsed > duration) {
@@ -88,7 +101,7 @@ export class Animator {
       handle?.connect(destroy);
 
       try {
-        this._app.ticker.add(update);
+        this.app.ticker.add(update);
       } catch (err) {
         reject(err);
       }

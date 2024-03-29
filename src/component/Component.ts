@@ -1,10 +1,11 @@
-import { Assets, Container, Graphics, Text } from 'pixi.js';
+import { Assets, Container, Graphics, PointData, Text } from 'pixi.js';
+import { ICanMove, ICanScale } from '../animation';
 import { ContainerUtils, ErrorUtils } from '../utils';
 import { ComponentBuilder, ComponentInitializer, ContainerConstructor } from './ComponentBuilder';
 import { ComponentLayoutManager } from './ComponentLayoutManager';
 import { IComponent } from './IComponent';
 
-export class Component<C extends Container> implements IComponent {
+export class Component<C extends Container> implements IComponent, ICanMove, ICanScale {
   private readonly _layoutManager: ComponentLayoutManager;
   private readonly _ctor: ContainerConstructor<C>;
   private readonly _initializer: ComponentInitializer;
@@ -16,6 +17,22 @@ export class Component<C extends Container> implements IComponent {
     this._layoutManager = layoutManager;
     this._ctor = ctor;
     this._initializer = initializer;
+  }
+
+  public get position(): PointData {
+    return this.container.position;
+  }
+
+  public set position(value: PointData) {
+    this.container.position = value;
+  }
+
+  public get scale(): PointData {
+    return this.container.scale;
+  }
+
+  public set scale(value: PointData) {
+    this.container.scale = value;
   }
 
   protected get container(): C {

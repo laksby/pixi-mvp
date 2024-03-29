@@ -17,18 +17,19 @@ import { ViewContext } from './types/ViewContext';
 
 export abstract class BaseView<P extends IPresenter> implements IView {
   private readonly _presenterType: Function;
+  private readonly _animator: Animator;
   private readonly _layoutManager: ComponentLayoutManager;
 
   private _app?: Application;
   private _container?: Container;
   private _context?: ViewContext;
   private _presenter?: P;
-  private _animator?: Animator;
   private _searchCache = new Map<string, Container | undefined>();
   private _components = new Set<IComponent>();
 
   constructor(presenterType: Function) {
     this._presenterType = presenterType;
+    this._animator = new Animator();
     this._layoutManager = new ComponentLayoutManager();
   }
 
@@ -40,8 +41,9 @@ export abstract class BaseView<P extends IPresenter> implements IView {
     this._app = app;
     this._container = this.createContainer();
     this._context = context;
-    this._animator = new Animator(app);
+
     this._searchCache.clear();
+    this._animator.initializeAnimator(app);
     this._layoutManager.initializeLayoutManager(app);
 
     parent.addChild(this.container);
@@ -102,7 +104,7 @@ export abstract class BaseView<P extends IPresenter> implements IView {
     return component;
   }
 
-  protected view<V extends IView>(view: V, initializer: ViewInitializer): ViewComponent<V> {
+  protected view<V extends IView>(view: V, initializer: ViewInitializer<V>): ViewComponent<V> {
     const component = new ViewComponent(this, view, initializer);
     this._components.add(component);
     return component;

@@ -1,12 +1,19 @@
 import { ContainerOptions } from 'pixi.js';
+import { Action1 } from '../types';
+import { IView } from './IView';
 
-export type ViewInitializer = (builder: ViewBuilder) => void;
+export type ViewInitializer<V extends IView> = (builder: ViewBuilder<V>) => void;
 
-export class ViewBuilder {
+export class ViewBuilder<V extends IView> {
   private _options = new Map<string, unknown>();
+  private _customActions: Action1<V>[] = [];
 
   public get options(): object {
     return Object.fromEntries(this._options.entries());
+  }
+
+  public get customActions(): Action1<V>[] {
+    return this._customActions;
   }
 
   public scale(scale: ContainerOptions['scale']): this {
@@ -19,6 +26,11 @@ export class ViewBuilder {
 
   public hidden(hidden: boolean): this {
     return this.setOptions<ContainerOptions>({ visible: !hidden });
+  }
+
+  public onLoad(action: Action1<V>): this {
+    this._customActions.push(action);
+    return this;
   }
 
   private setOptions<O extends object>(options: O): this {
