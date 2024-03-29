@@ -1,36 +1,29 @@
 import { Application, Container, TextStyleOptions } from 'pixi.js';
 import { Animator } from '../animation/Animator';
-import {
-  Component,
-  ComponentInitializer,
-  ComponentLayoutManager,
-  ComponentPool,
-  ContainerConstructor,
-  IComponent,
-} from '../component';
+import { Element, ElementInitializer, LayoutManager, ElementPool, ElementConstructor, IElement } from '../structure';
 import { ContainerUtils, ErrorUtils } from '../utils';
 import { IPresenter } from './IPresenter';
 import { IView } from './IView';
 import { ViewInitializer } from './ViewBuilder';
-import { ViewComponent } from './ViewComponent';
+import { ViewElement } from './ViewElement';
 import { ViewContext } from './types/ViewContext';
 
 export abstract class BaseView<P extends IPresenter> implements IView {
   private readonly _presenterType: Function;
   private readonly _animator: Animator;
-  private readonly _layoutManager: ComponentLayoutManager;
+  private readonly _layoutManager: LayoutManager;
 
   private _app?: Application;
   private _container?: Container;
   private _context?: ViewContext;
   private _presenter?: P;
   private _searchCache = new Map<string, Container | undefined>();
-  private _components = new Set<IComponent>();
+  private _elements = new Set<IElement>();
 
   constructor(presenterType: Function) {
     this._presenterType = presenterType;
     this._animator = new Animator();
-    this._layoutManager = new ComponentLayoutManager();
+    this._layoutManager = new LayoutManager();
   }
 
   public async initializeView(app: Application, parent: Container, context: ViewContext): Promise<void> {
@@ -52,7 +45,7 @@ export abstract class BaseView<P extends IPresenter> implements IView {
       this._presenter = Reflect.construct(this._presenterType, [this, this.context.model]) as P;
     }
 
-    await Promise.all(Array.from(this._components).map(component => component.initializeComponent(this.container)));
+    await Promise.all(Array.from(this._elements).map(element => element.initializeElement(this.container)));
 
     await this.onLoad();
     await this.presenter.initializePresenter();
@@ -95,25 +88,22 @@ export abstract class BaseView<P extends IPresenter> implements IView {
     return new Container();
   }
 
-  protected component<C extends Container>(
-    ctor: ContainerConstructor<C>,
-    initializer: ComponentInitializer,
-  ): Component<C> {
-    const component = new Component(this._layoutManager, ctor, initializer);
-    this._components.add(component);
-    return component;
+  protected element<C extends Container>(ctor: ElementConstructor<C>, initializer: ElementInitializer): Element<C> {
+    const element = new Element(this._layoutManager, ctor, initializer);
+    this._elements.add(element);
+    return element;
   }
 
-  protected view<V extends IView>(view: V, initializer: ViewInitializer<V>): ViewComponent<V> {
-    const component = new ViewComponent(this, view, initializer);
-    this._components.add(component);
-    return component;
+  protected view<V extends IView>(view: V, initializer: ViewInitializer<V>): ViewElement<V> {
+    const element = new ViewElement(this, view, initializer);
+    this._elements.add(element);
+    return element;
   }
 
-  protected pool<C extends Container>(ctor: ContainerConstructor<C>): ComponentPool<C> {
-    const component = new ComponentPool(this._layoutManager, ctor);
-    this._components.add(component);
-    return component;
+  protected pool<C extends Container>(ctor: ElementConstructor<C>): ElementPool<C> {
+    const element = new ElementPool(this._layoutManager, ctor);
+    this._elements.add(element);
+    return element;
   }
 
   protected find<T extends Container>(label: string): T | undefined {

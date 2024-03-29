@@ -1,19 +1,19 @@
 import { Assets, Container, Graphics, PointData, Text } from 'pixi.js';
 import { ICanMove, ICanScale } from '../animation';
 import { ContainerUtils, ErrorUtils } from '../utils';
-import { ComponentBuilder, ComponentInitializer, ContainerConstructor } from './ComponentBuilder';
-import { ComponentLayoutManager } from './ComponentLayoutManager';
-import { IComponent } from './IComponent';
+import { ElementBuilder, ElementInitializer, ElementConstructor } from './ElementBuilder';
+import { LayoutManager } from './LayoutManager';
+import { IElement } from './IElement';
 
-export class Component<C extends Container> implements IComponent, ICanMove, ICanScale {
-  private readonly _layoutManager: ComponentLayoutManager;
-  private readonly _ctor: ContainerConstructor<C>;
-  private readonly _initializer: ComponentInitializer;
-  private _children: Component<Container>[] = [];
+export class Element<C extends Container> implements IElement, ICanMove, ICanScale {
+  private readonly _layoutManager: LayoutManager;
+  private readonly _ctor: ElementConstructor<C>;
+  private readonly _initializer: ElementInitializer;
+  private _children: Element<Container>[] = [];
   private _container?: C;
   private _searchCache = new Map<string, Container | undefined>();
 
-  constructor(layoutManager: ComponentLayoutManager, ctor: ContainerConstructor<C>, initializer: ComponentInitializer) {
+  constructor(layoutManager: LayoutManager, ctor: ElementConstructor<C>, initializer: ElementInitializer) {
     this._layoutManager = layoutManager;
     this._ctor = ctor;
     this._initializer = initializer;
@@ -39,10 +39,10 @@ export class Component<C extends Container> implements IComponent, ICanMove, ICa
     return this._container || ErrorUtils.notInitialized(this, 'Container');
   }
 
-  public async initializeComponent(parent: Container): Promise<void> {
+  public async initializeElement(parent: Container): Promise<void> {
     this._searchCache.clear();
 
-    const builder = new ComponentBuilder(this._layoutManager);
+    const builder = new ElementBuilder(this._layoutManager);
     this._initializer(builder);
 
     const options: Record<string, unknown> = {};
@@ -51,8 +51,8 @@ export class Component<C extends Container> implements IComponent, ICanMove, ICa
     Object.assign(options, builder.options);
     Object.assign(options, Object.fromEntries(builder.assets.map(([field], index) => [field, assets[index]])));
 
-    const ComponentType = this._ctor as new (options: unknown) => C;
-    const container = new ComponentType(options);
+    const ContainerType = this._ctor as new (options: unknown) => C;
+    const container = new ContainerType(options);
 
     builder.events.forEach(event => container.on(event.event, event.handler, event.context));
 
@@ -64,9 +64,9 @@ export class Component<C extends Container> implements IComponent, ICanMove, ICa
 
     parent.addChild(container);
     this._container = container;
-    this._children = builder.children.map(child => new Component(this._layoutManager, child.ctor, child.initializer));
+    this._children = builder.children.map(child => new Element(this._layoutManager, child.ctor, child.initializer));
 
-    await Promise.all(this._children.map(childComponent => childComponent.initializeComponent(container)));
+    await Promise.all(this._children.map(childElement => childElement.initializeElement(container)));
 
     builder.positionFlow.forEach(change => {
       container.position = change(container);
@@ -77,7 +77,7 @@ export class Component<C extends Container> implements IComponent, ICanMove, ICa
     });
   }
 
-  public destroyComponent(): void {
+  public destroyElement(): void {
     this.container.destroy();
   }
 
@@ -86,7 +86,7 @@ export class Component<C extends Container> implements IComponent, ICanMove, ICa
   }
 
   public setForInner<I extends Container, F extends keyof I>(label: string, field: F, value: I[F]): void {
-    const container = this.find<I>(label) || ErrorUtils.notInitialized(this, `InnerComponent '${label}'`);
+    const container = this.find<I>(label) || ErrorUtils.notInitialized(this, `InnerElement '${label}'`);
     container[field] = value;
   }
 

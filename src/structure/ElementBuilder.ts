@@ -12,41 +12,35 @@ import {
 } from 'pixi.js';
 import { Action1 } from '../types';
 import { FilterUtils } from '../utils';
-import {
-  ComponentLayoutManager,
-  LayoutAmount,
-  LayoutDirection,
-  LayoutPositionChange,
-  LayoutPreset,
-} from './ComponentLayoutManager';
+import { LayoutManager, LayoutAmount, LayoutDirection, LayoutPositionChange, LayoutPreset } from './LayoutManager';
 
-export type ComponentInitializer = (builder: ComponentBuilder) => void;
-export type ContainerConstructor<C extends Container> = new () => C;
+export type ElementInitializer = (builder: ElementBuilder) => void;
+export type ElementConstructor<C extends Container> = new () => C;
 export type DrawInitializer = (graphics: Graphics) => void;
 
-export interface ComponentBuilderEvent<E extends EventEmitter.EventNames<string>> {
+export interface ElementBuilderEvent<E extends EventEmitter.EventNames<string>> {
   event: E;
   handler: EventEmitter.EventListener<string, E>;
   context?: unknown;
 }
 
 export interface ChildBuilder<T extends Container> {
-  ctor: ContainerConstructor<T>;
-  initializer: ComponentInitializer;
+  ctor: ElementConstructor<T>;
+  initializer: ElementInitializer;
 }
 
-export class ComponentBuilder {
-  private _layoutManager: ComponentLayoutManager;
+export class ElementBuilder {
+  private _layoutManager: LayoutManager;
   private _positionFlow: LayoutPositionChange[] = [];
   private _options = new Map<string, unknown>();
   private _assets = new Map<string, string>();
-  private _events: ComponentBuilderEvent<string>[] = [];
+  private _events: ElementBuilderEvent<string>[] = [];
   private _draws: DrawInitializer[] = [];
   private _customActions: Action1<Container>[] = [];
   private _filters: Filter[] = [];
   private _children: ChildBuilder<Container>[] = [];
 
-  constructor(layoutManager: ComponentLayoutManager) {
+  constructor(layoutManager: LayoutManager) {
     this._layoutManager = layoutManager;
   }
 
@@ -62,7 +56,7 @@ export class ComponentBuilder {
     return Array.from(this._assets.entries());
   }
 
-  public get events(): ComponentBuilderEvent<string>[] {
+  public get events(): ElementBuilderEvent<string>[] {
     return this._events;
   }
 
@@ -147,7 +141,7 @@ export class ComponentBuilder {
     return this;
   }
 
-  public child<T extends Container>(ctor: ContainerConstructor<T>, initializer: ComponentInitializer): this {
+  public child<T extends Container>(ctor: ElementConstructor<T>, initializer: ElementInitializer): this {
     this._children.push({ ctor, initializer });
     return this;
   }

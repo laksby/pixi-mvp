@@ -1,9 +1,9 @@
 import { Container } from 'pixi.js';
-import { IComponent } from '../component';
+import { IElement } from '../structure';
 import { IView } from './IView';
 import { ViewBuilder, ViewInitializer } from './ViewBuilder';
 
-export class ViewComponent<V extends IView> implements IComponent {
+export class ViewElement<V extends IView> implements IElement {
   private readonly _parentView: IView;
   private readonly _view: V;
   private readonly _initializer: ViewInitializer<V>;
@@ -14,7 +14,7 @@ export class ViewComponent<V extends IView> implements IComponent {
     this._initializer = initializer;
   }
 
-  public async initializeComponent(parent: Container): Promise<void> {
+  public async initializeElement(parent: Container): Promise<void> {
     const builder = new ViewBuilder<V>();
     this._initializer(builder);
 
@@ -32,7 +32,7 @@ export class ViewComponent<V extends IView> implements IComponent {
     });
   }
 
-  public destroyComponent(): void {
+  public destroyElement(): void {
     this._view.destroyView();
   }
 }

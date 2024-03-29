@@ -6,7 +6,7 @@ export type LayoutDirection = 'up' | 'down';
 export type LayoutPositionChange = (container: Container) => PointData;
 export type LayoutAmount = number | string;
 
-export class ComponentLayoutManager {
+export class LayoutManager {
   private _app?: Application;
 
   public get app(): Application {
