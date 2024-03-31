@@ -1,3 +1,4 @@
+export * from './ContainerBuilder';
 export * from './Element';
 export * from './ElementBuilder';
 export * from './ElementPool';

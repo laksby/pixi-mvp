@@ -1,11 +1,20 @@
 import { Application, Container, TextStyleOptions } from 'pixi.js';
 import { Animator } from '../animation/Animator';
-import { Element, ElementInitializer, LayoutManager, ElementPool, ElementConstructor, IElement } from '../structure';
+import {
+  ContainerInitializer,
+  Element,
+  ElementConstructor,
+  ElementInitializer,
+  ElementPool,
+  IElement,
+  LayoutManager,
+} from '../structure';
 import { ContainerUtils, ErrorUtils } from '../utils';
 import { IPresenter } from './IPresenter';
 import { IView } from './IView';
 import { ViewInitializer } from './ViewBuilder';
 import { ViewElement } from './ViewElement';
+import { ViewElementPool } from './ViewElementPool';
 import { ViewContext } from './types/ViewContext';
 
 export abstract class BaseView<P extends IPresenter> implements IView {
@@ -59,6 +68,18 @@ export abstract class BaseView<P extends IPresenter> implements IView {
     this.container.destroy();
   }
 
+  public async updateElements(): Promise<void> {
+    await Promise.all(Array.from(this._elements).map(element => element.updateElement()));
+  }
+
+  public hide(): void {
+    this.container.visible = false;
+  }
+
+  public show(): void {
+    this.container.visible = true;
+  }
+
   public get app(): Application {
     return this._app || ErrorUtils.notInitialized(this, 'Application');
   }
@@ -88,20 +109,26 @@ export abstract class BaseView<P extends IPresenter> implements IView {
     return new Container();
   }
 
-  protected element<C extends Container>(ctor: ElementConstructor<C>, initializer: ElementInitializer): Element<C> {
+  protected element<C extends Container>(ctor: ElementConstructor<C>, initializer?: ElementInitializer): Element<C> {
     const element = new Element(this._layoutManager, ctor, initializer);
     this._elements.add(element);
     return element;
   }
 
-  protected view<V extends IView>(view: V, initializer: ViewInitializer<V>): ViewElement<V> {
-    const element = new ViewElement(this, view, initializer);
+  protected view<V extends IView>(view: V, initializer?: ViewInitializer<V>): ViewElement<V> {
+    const element = new ViewElement(this._layoutManager, this, view, initializer);
     this._elements.add(element);
     return element;
   }
 
-  protected pool<C extends Container>(ctor: ElementConstructor<C>): ElementPool<C> {
-    const element = new ElementPool(this._layoutManager, ctor);
+  protected pool<C extends Container>(ctor: ElementConstructor<C>, initializer?: ContainerInitializer): ElementPool<C> {
+    const element = new ElementPool(this._layoutManager, ctor, initializer);
+    this._elements.add(element);
+    return element;
+  }
+
+  protected viewPool<V extends IView>(initializer?: ContainerInitializer): ViewElementPool<V> {
+    const element = new ViewElementPool<V>(this._layoutManager, this, initializer);
     this._elements.add(element);
     return element;
   }

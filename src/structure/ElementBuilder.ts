@@ -1,18 +1,7 @@
-import {
-  Container,
-  ContainerOptions,
-  EventEmitter,
-  FederatedOptions,
-  Filter,
-  Graphics,
-  PointData,
-  Size,
-  SpriteOptions,
-  TextOptions,
-} from 'pixi.js';
+import { Container, EventEmitter, FederatedOptions, Filter, Graphics, SpriteOptions, TextOptions } from 'pixi.js';
 import { Action1 } from '../types';
 import { FilterUtils } from '../utils';
-import { LayoutManager, LayoutAmount, LayoutDirection, LayoutPositionChange, LayoutPreset } from './LayoutManager';
+import { ContainerBuilder } from './ContainerBuilder';
 
 export type ElementInitializer = (builder: ElementBuilder) => void;
 export type ElementConstructor<C extends Container> = new () => C;
@@ -29,28 +18,13 @@ export interface ChildBuilder<T extends Container> {
   initializer: ElementInitializer;
 }
 
-export class ElementBuilder {
-  private _layoutManager: LayoutManager;
-  private _positionFlow: LayoutPositionChange[] = [];
-  private _options = new Map<string, unknown>();
+export class ElementBuilder extends ContainerBuilder {
   private _assets = new Map<string, string>();
   private _events: ElementBuilderEvent<string>[] = [];
   private _draws: DrawInitializer[] = [];
   private _customActions: Action1<Container>[] = [];
   private _filters: Filter[] = [];
   private _children: ChildBuilder<Container>[] = [];
-
-  constructor(layoutManager: LayoutManager) {
-    this._layoutManager = layoutManager;
-  }
-
-  public get positionFlow(): LayoutPositionChange[] {
-    return this._positionFlow;
-  }
-
-  public get options(): object {
-    return Object.fromEntries(this._options.entries());
-  }
 
   public get assets(): [string, string][] {
     return Array.from(this._assets.entries());
@@ -102,40 +76,6 @@ export class ElementBuilder {
     return this;
   }
 
-  public scale(scale: ContainerOptions['scale']): this {
-    return this.setOptions<ContainerOptions>({ scale });
-  }
-
-  public size(size: Size): this {
-    return this.setOptions<ContainerOptions>({ width: size.width, height: size.height });
-  }
-
-  public position(position: PointData): this {
-    return this.setOptions<ContainerOptions>({ position });
-  }
-
-  public layout(options: LayoutPreset): this {
-    this._positionFlow.push(this._layoutManager.positionPreset(options));
-    return this;
-  }
-
-  public shift(direction: LayoutDirection, amount: LayoutAmount): this {
-    this.positionFlow.push(this._layoutManager.positionShift(direction, amount));
-    return this;
-  }
-
-  public label(label: ContainerOptions['label']): this {
-    return this.setOptions<ContainerOptions>({ label });
-  }
-
-  public zIndex(zIndex: ContainerOptions['zIndex']): this {
-    return this.setOptions<ContainerOptions>({ zIndex });
-  }
-
-  public hidden(hidden: boolean): this {
-    return this.setOptions<ContainerOptions>({ visible: !hidden });
-  }
-
   public filter(filter: Filter): this {
     this._filters.push(filter);
     return this;
@@ -165,14 +105,5 @@ export class ElementBuilder {
   ): this {
     this._events.push({ event, handler, context });
     return this;
-  }
-
-  private setOptions<O extends object>(options: O): this {
-    Object.entries(options).forEach(([key, value]) => this.setOption(key, value));
-    return this;
-  }
-
-  private setOption(field: string, value: unknown): void {
-    this._options.set(field, value);
   }
 }

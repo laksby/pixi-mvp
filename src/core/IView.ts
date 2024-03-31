@@ -8,4 +8,7 @@ export interface IView {
   initializeView(app: Application, parent: Container, context: ViewContext): Promise<void>;
   refreshView(parent: Container): Promise<void>;
   destroyView(): void;
+  updateElements(): Promise<void>;
+  hide(): void;
+  show(): void;
 }

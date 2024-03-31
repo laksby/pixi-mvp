@@ -4,3 +4,4 @@ export * from './FilterUtils';
 export * from './FunctionUtils';
 export * from './GeneratorUtils';
 export * from './MathUtils';
+export * from './ObjectUtils';

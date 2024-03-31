@@ -5,3 +5,4 @@ export * from './IPresenter';
 export * from './IView';
 export * from './ViewBuilder';
 export * from './ViewElement';
+export * from './ViewElementPool';

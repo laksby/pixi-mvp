@@ -1,19 +1,19 @@
-import { Assets, Container, Graphics, PointData, Text } from 'pixi.js';
+import { Assets, Container, Graphics, PointData } from 'pixi.js';
 import { ICanMove, ICanScale } from '../animation';
-import { ContainerUtils, ErrorUtils } from '../utils';
-import { ElementBuilder, ElementInitializer, ElementConstructor } from './ElementBuilder';
-import { LayoutManager } from './LayoutManager';
+import { ContainerUtils, ErrorUtils, ObjectUtils } from '../utils';
+import { ElementBuilder, ElementConstructor, ElementInitializer } from './ElementBuilder';
 import { IElement } from './IElement';
+import { LayoutManager } from './LayoutManager';
 
 export class Element<C extends Container> implements IElement, ICanMove, ICanScale {
   private readonly _layoutManager: LayoutManager;
   private readonly _ctor: ElementConstructor<C>;
-  private readonly _initializer: ElementInitializer;
-  private _children: Element<Container>[] = [];
+  private readonly _initializer?: ElementInitializer;
+  private readonly _children = new Set<Element<Container>>();
+  private readonly _searchCache = new Map<string, Container>();
   private _container?: C;
-  private _searchCache = new Map<string, Container | undefined>();
 
-  constructor(layoutManager: LayoutManager, ctor: ElementConstructor<C>, initializer: ElementInitializer) {
+  constructor(layoutManager: LayoutManager, ctor: ElementConstructor<C>, initializer?: ElementInitializer) {
     this._layoutManager = layoutManager;
     this._ctor = ctor;
     this._initializer = initializer;
@@ -43,65 +43,77 @@ export class Element<C extends Container> implements IElement, ICanMove, ICanSca
     this._searchCache.clear();
 
     const builder = new ElementBuilder(this._layoutManager);
-    this._initializer(builder);
-
-    const options: Record<string, unknown> = {};
-
-    const assets = await Promise.all(builder.assets.map(([, name]) => Assets.load(name)));
-    Object.assign(options, builder.options);
-    Object.assign(options, Object.fromEntries(builder.assets.map(([field], index) => [field, assets[index]])));
+    const options = await this.runBuilder(builder);
 
     const ContainerType = this._ctor as new (options: unknown) => C;
-    const container = new ContainerType(options);
+    this._container = new ContainerType(options);
+    parent.addChild(this.container);
 
-    builder.events.forEach(event => container.on(event.event, event.handler, event.context));
+    await this.applyBuilder(builder);
+  }
 
-    container.filters = builder.filters;
+  public async updateElement(): Promise<void> {
+    const builder = new ElementBuilder(this._layoutManager);
+    const options = await this.runBuilder(builder);
 
-    if (container instanceof Graphics) {
-      builder.draws.forEach(draw => draw(container));
-    }
+    ObjectUtils.mixIn(this.container, options);
 
-    parent.addChild(container);
-    this._container = container;
-    this._children = builder.children.map(child => new Element(this._layoutManager, child.ctor, child.initializer));
-
-    await Promise.all(this._children.map(childElement => childElement.initializeElement(container)));
-
-    builder.positionFlow.forEach(change => {
-      container.position = change(container);
-    });
-
-    builder.customActions.forEach(action => {
-      action(container);
-    });
+    await this.applyBuilder(builder);
   }
 
   public destroyElement(): void {
     this.container.destroy();
   }
 
-  public setForInnerText<F extends keyof Text>(label: string, field: F, value: Text[F]): void {
-    return this.setForInner<Text, F>(label, field, value);
-  }
-
-  public setForInner<I extends Container, F extends keyof I>(label: string, field: F, value: I[F]): void {
-    const container = this.find<I>(label) || ErrorUtils.notInitialized(this, `InnerElement '${label}'`);
-    container[field] = value;
-  }
-
-  public set<F extends keyof C>(field: F, value: C[F]): void {
-    this.container[field] = value;
-  }
-
-  protected find<T extends Container>(label: string): T | undefined {
-    if (this._searchCache.has(label)) {
-      return this._searchCache.get(label) as T;
+  public object<I extends Container = C>(label?: string): I {
+    if (!label) {
+      return this.container as unknown as I;
     }
 
-    const child = ContainerUtils.byLabel(label, this.container);
+    if (this._searchCache.has(label)) {
+      return this._searchCache.get(label) as I;
+    }
+
+    const child = ContainerUtils.byLabel(label, this.container) || ErrorUtils.notInitialized(this, `Child '${label}'`);
     this._searchCache.set(label, child);
 
-    return child as T;
+    return child as I;
+  }
+
+  private async runBuilder(builder: ElementBuilder): Promise<Record<string, unknown>> {
+    this._initializer?.(builder);
+
+    const options: Record<string, unknown> = {};
+    const assets = await Promise.all(builder.assets.map(([, name]) => Assets.load(name)));
+    Object.assign(options, builder.options);
+    Object.assign(options, Object.fromEntries(builder.assets.map(([field], index) => [field, assets[index]])));
+
+    return options;
+  }
+
+  private async applyBuilder(builder: ElementBuilder): Promise<void> {
+    this.container.removeAllListeners();
+    builder.events.forEach(event => this.container.on(event.event, event.handler, event.context));
+
+    this.container.filters = builder.filters;
+
+    if (this.container instanceof Graphics) {
+      const graphics = this.container as Graphics;
+      graphics.clear();
+      builder.draws.forEach(draw => draw(graphics));
+    }
+
+    this._children.forEach(child => child.destroyElement());
+    this._children.clear();
+    builder.children.forEach(child => {
+      this._children.add(new Element(this._layoutManager, child.ctor, child.initializer));
+    });
+
+    await Promise.all(Array.from(this._children, childElement => childElement.initializeElement(this.container)));
+
+    builder.applySizeFlow(this.container);
+    builder.applyPositionFlow(this.container);
+
+    builder.customActions.forEach(action => action(this.container));
   }
 }
