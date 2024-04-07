@@ -1,7 +1,8 @@
 import { SoundSourceMap, sound } from '@pixi/sound';
 import FontFaceObserver from 'fontfaceobserver';
-import { Application, ApplicationOptions, Assets, TextStyleOptions, UnresolvedAsset } from 'pixi.js';
-import { FunctionUtils } from '../utils';
+import { Application, ApplicationOptions, Assets, Container, TextStyleOptions, UnresolvedAsset } from 'pixi.js';
+import { Camera } from '../camera';
+import { ErrorUtils, FunctionUtils } from '../utils';
 import { IView } from './IView';
 import { ViewContext } from './types/ViewContext';
 
@@ -10,10 +11,21 @@ export type GameApplicationOptions = Omit<Partial<ApplicationOptions>, 'canvas' 
 export abstract class BaseGame<M> {
   private readonly _canvas: HTMLCanvasElement;
   private readonly _app: Application;
+  private readonly _camera: Camera;
+  private _model?: M;
 
   constructor(canvas: HTMLCanvasElement) {
     this._canvas = canvas;
     this._app = new Application();
+    this._camera = new Camera(this._app);
+  }
+
+  public get camera(): Camera {
+    return this._camera;
+  }
+
+  public get model(): M {
+    return this._model || ErrorUtils.notInitialized(this, 'Model');
   }
 
   public async initializeGame(): Promise<void> {
@@ -35,18 +47,34 @@ export abstract class BaseGame<M> {
 
     await Promise.all(fonts.map(fontName => new FontFaceObserver(fontName).load()));
 
-    const model = this.createModel();
-    const rootView = this.createRootView(model);
+    this._model = this.createModel();
+    const sceneView = this.createSceneView();
+    const fixedView = this.createFixedView();
 
     const viewContext: ViewContext = {
-      model,
+      model: this.model,
       textStyles: new Map(Object.entries(textStyles)),
     };
 
-    await rootView.initializeView(this.app, this.app.stage, viewContext);
+    await Promise.all([
+      sceneView.initializeView(this, this.app.stage, viewContext),
+      fixedView ? fixedView.initializeView(this, this.app.stage, viewContext) : undefined,
+    ]);
 
-    const resize = FunctionUtils.debounce(() => rootView.refreshView(this.app.stage), 300);
+    this._camera.initializeCamera(sceneView.container);
+    this.onCameraInitialize(sceneView.container);
+
+    const resize = FunctionUtils.debounce(() => {
+      sceneView.refreshView(this.app.stage);
+
+      if (fixedView) {
+        fixedView.refreshView(this.app.stage);
+      }
+    }, 300);
+
     window.addEventListener('resize', resize);
+
+    await this.onReady();
   }
 
   public get canvas(): HTMLCanvasElement {
@@ -59,7 +87,12 @@ export abstract class BaseGame<M> {
 
   protected abstract createOptions(): GameApplicationOptions;
   protected abstract createModel(): M;
-  protected abstract createRootView(model: M): IView;
+  protected abstract createSceneView(): IView;
+
+  protected createFixedView(): IView | undefined {
+    // Virtual
+    return undefined;
+  }
 
   protected getAssets(): UnresolvedAsset[] {
     // Virtual
@@ -79,5 +112,13 @@ export abstract class BaseGame<M> {
   protected getTextStyles(): Record<string, TextStyleOptions> {
     // Virtual
     return {};
+  }
+
+  protected onCameraInitialize(_rootContainer: Container): void {
+    // Virtual
+  }
+
+  protected onReady(): void | Promise<void> {
+    // Virtual
   }
 }

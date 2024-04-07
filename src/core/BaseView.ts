@@ -10,6 +10,7 @@ import {
   LayoutManager,
 } from '../structure';
 import { ContainerUtils, ErrorUtils } from '../utils';
+import { BaseGame } from './BaseGame';
 import { IPresenter } from './IPresenter';
 import { IView } from './IView';
 import { ViewInitializer } from './ViewBuilder';
@@ -22,7 +23,7 @@ export abstract class BaseView<P extends IPresenter> implements IView {
   private readonly _animator: Animator;
   private readonly _layoutManager: LayoutManager;
 
-  private _app?: Application;
+  private _game?: BaseGame<unknown>;
   private _container?: Container;
   private _context?: ViewContext;
   private _presenter?: P;
@@ -35,18 +36,18 @@ export abstract class BaseView<P extends IPresenter> implements IView {
     this._layoutManager = new LayoutManager();
   }
 
-  public async initializeView(app: Application, parent: Container, context: ViewContext): Promise<void> {
+  public async initializeView(game: BaseGame<unknown>, parent: Container, context: ViewContext): Promise<void> {
     if (this._container) {
       this._container.destroy();
     }
 
-    this._app = app;
+    this._game = game;
     this._container = this.createContainer();
     this._context = context;
 
     this._searchCache.clear();
-    this._animator.initializeAnimator(app);
-    this._layoutManager.initializeLayoutManager(app);
+    this._animator.initializeAnimator(this.app);
+    this._layoutManager.initializeLayoutManager(this.app);
 
     parent.addChild(this.container);
 
@@ -54,14 +55,16 @@ export abstract class BaseView<P extends IPresenter> implements IView {
       this._presenter = Reflect.construct(this._presenterType, [this, this.context.model]) as P;
     }
 
-    await Promise.all(Array.from(this._elements).map(element => element.initializeElement(this.container)));
+    for (const element of this._elements.values()) {
+      await element.initializeElement(this.container);
+    }
 
     await this.onLoad();
     await this.presenter.initializePresenter();
   }
 
   public async refreshView(parent: Container): Promise<void> {
-    await this.initializeView(this.app, parent, this.context);
+    await this.initializeView(this.game, parent, this.context);
   }
 
   public destroyView(): void {
@@ -69,7 +72,9 @@ export abstract class BaseView<P extends IPresenter> implements IView {
   }
 
   public async updateElements(): Promise<void> {
-    await Promise.all(Array.from(this._elements).map(element => element.updateElement()));
+    for (const element of this._elements.values()) {
+      await element.updateElement();
+    }
   }
 
   public hide(): void {
@@ -80,8 +85,12 @@ export abstract class BaseView<P extends IPresenter> implements IView {
     this.container.visible = true;
   }
 
+  public get game(): BaseGame<unknown> {
+    return this._game || ErrorUtils.notInitialized(this, 'Game');
+  }
+
   public get app(): Application {
-    return this._app || ErrorUtils.notInitialized(this, 'Application');
+    return this.game.app;
   }
 
   public get container(): Container {

@@ -4,7 +4,7 @@ export type EventPool<E extends object> = {
   [K in keyof E]: Set<ActionMaybeAsync1<E[K]>>;
 };
 
-export class GameEvents<E extends object> {
+export class EventEmitter<E extends object> {
   private readonly _eventPool: Partial<EventPool<E>> = {};
 
   public on<K extends keyof E>(event: K, handler: ActionMaybeAsync1<E[K]>): void {

@@ -109,7 +109,9 @@ export class Element<C extends Container> implements IElement, ICanMove, ICanSca
       this._children.add(new Element(this._layoutManager, child.ctor, child.initializer));
     });
 
-    await Promise.all(Array.from(this._children, childElement => childElement.initializeElement(this.container)));
+    for (const childElement of this._children.values()) {
+      await childElement.initializeElement(this.container);
+    }
 
     builder.applySizeFlow(this.container);
     builder.applyPositionFlow(this.container);

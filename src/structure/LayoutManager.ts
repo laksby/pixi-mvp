@@ -1,7 +1,15 @@
 import { Application, Container, PointData, Size, Sprite, TilingSprite } from 'pixi.js';
 import { ErrorUtils } from '../utils';
 
-export type LayoutPreset = 'center-screen' | 'top-screen' | 'top-left-screen' | 'top-right-screen' | 'center-parent';
+export type LayoutPreset =
+  | 'center-screen'
+  | 'top-screen'
+  | 'top-left-screen'
+  | 'top-right-screen'
+  | 'bottom-screen'
+  | 'bottom-left-screen'
+  | 'bottom-right-screen'
+  | 'center-parent';
 export type LayoutDirection = 'up' | 'down' | 'left' | 'right';
 export type LayoutFill = 'width-screen';
 export type LayoutPositionChange = (container: Container) => PointData;
@@ -32,6 +40,15 @@ export class LayoutManager {
 
       case 'top-right-screen':
         return () => ({ x: this.app.screen.width, y: 0 });
+
+      case 'bottom-screen':
+        return () => ({ x: this.app.screen.width / 2, y: this.app.screen.height });
+
+      case 'bottom-left-screen':
+        return () => ({ x: 0, y: this.app.screen.height });
+
+      case 'bottom-right-screen':
+        return () => ({ x: this.app.screen.width, y: this.app.screen.height });
 
       case 'center-parent':
         return c => ({ x: this.getCenterX(c.parent, boundingSize), y: this.getCenterY(c.parent, boundingSize) });
@@ -99,24 +116,32 @@ export class LayoutManager {
     }
   }
 
-  private getCenterX(parent: Container, boundingSize?: Size): number {
-    const parentWidth = boundingSize?.width ?? parent.width;
+  private getCenterX(container: Container, boundingSize?: Size): number {
+    const width = this.getWidth(container, boundingSize);
 
-    if (parent instanceof Sprite) {
-      return parentWidth / 2 - parent.anchor.x * parentWidth;
+    if (container instanceof Sprite) {
+      return width / 2 - container.anchor.x * width;
     }
 
-    return parentWidth / 2;
+    return width / 2;
   }
 
-  private getCenterY(parent: Container, boundingSize?: Size): number {
-    const parentHeight = boundingSize?.height ?? parent.height;
+  private getCenterY(container: Container, boundingSize?: Size): number {
+    const height = this.getHeight(container, boundingSize);
 
-    if (parent instanceof Sprite) {
-      return parentHeight / 2 - parent.anchor.y * parentHeight;
+    if (container instanceof Sprite) {
+      return height / 2 - container.anchor.y * height;
     }
 
-    return parentHeight / 2;
+    return height / 2;
+  }
+
+  private getWidth(container: Container, boundingSize?: Size): number {
+    return boundingSize?.width ?? container.width;
+  }
+
+  private getHeight(container: Container, boundingSize?: Size): number {
+    return boundingSize?.height ?? container.height;
   }
 
   private getTextureHeight(container: Container): number {

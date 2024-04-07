@@ -25,7 +25,7 @@ export class ViewElement<V extends IView> implements IElement {
     const builder = new ViewBuilder<V>(this._layoutManager);
     const options = this.runBuilder(builder);
 
-    await this._view.initializeView(this._parentView.app, parent, this._parentView.context);
+    await this._view.initializeView(this._parentView.game, parent, this._parentView.context);
 
     ObjectUtils.mixIn(this._view.container, options);
     this.applyBuilder(builder);

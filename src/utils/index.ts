@@ -5,3 +5,4 @@ export * from './FunctionUtils';
 export * from './GeneratorUtils';
 export * from './MathUtils';
 export * from './ObjectUtils';
+export * from './TileUtils';
