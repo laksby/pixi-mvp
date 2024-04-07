@@ -90,8 +90,10 @@ export class Camera {
   }
 
   protected update(): void {
-    this.applyMove();
-    this.applyZoom();
+    if (this.isEnabled) {
+      this.applyMove();
+      this.applyZoom();
+    }
   }
 
   protected applyMove(): void {
