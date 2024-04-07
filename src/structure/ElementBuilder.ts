@@ -59,6 +59,14 @@ export class ElementBuilder extends ContainerBuilder {
     return this.setOptions<SpriteOptions>({ anchor });
   }
 
+  public spriteWidth(width: SpriteOptions['width']): this {
+    return this.setOptions<SpriteOptions>({ width });
+  }
+
+  public spriteHeight(height: SpriteOptions['height']): this {
+    return this.setOptions<SpriteOptions>({ height });
+  }
+
   public text(text: TextOptions['text']): this {
     return this.setOptions<TextOptions>({ text });
   }

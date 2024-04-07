@@ -85,8 +85,8 @@ export class Element<C extends Container> implements IElement, ICanMove, ICanSca
 
     const options: Record<string, unknown> = {};
     const assets = await Promise.all(builder.assets.map(([, name]) => Assets.load(name)));
-    Object.assign(options, builder.options);
     Object.assign(options, Object.fromEntries(builder.assets.map(([field], index) => [field, assets[index]])));
+    Object.assign(options, builder.options);
 
     return options;
   }
